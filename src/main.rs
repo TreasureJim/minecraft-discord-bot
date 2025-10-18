@@ -1,7 +1,7 @@
 #[allow(async_fn_in_trait)]
 mod docker;
 
-use bollard::Docker;
+use bollard::{Docker, query_parameters::InspectContainerOptionsBuilder};
 use dotenvy::dotenv;
 use serenity::all::EditMessage;
 use serenity::async_trait;
@@ -137,6 +137,18 @@ async fn main() {
             .expect("Could not connect to docker"),
         container_name: env::var("CONTAINER_NAME").expect("Expected CONTAINER_NAME in environment"),
     };
+
+    let _ = global_data
+        .docker
+        .inspect_container(
+            &global_data.container_name,
+            Some(InspectContainerOptionsBuilder::new().build()),
+        )
+        .await
+        .expect(&format!(
+            "Could not find container: {}",
+            global_data.container_name
+        ));
 
     {
         let mut data = client.data.write().await;

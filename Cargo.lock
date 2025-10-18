@@ -1123,6 +1123,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "minecraft-discord-bot"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "bollard",
+ "dotenvy",
+ "env_logger",
+ "log",
+ "serenity",
+ "tokio",
+]
+
+[[package]]
 name = "mini-moka"
 version = "0.10.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1135,19 +1148,6 @@ dependencies = [
  "smallvec",
  "tagptr",
  "triomphe",
-]
-
-[[package]]
-name = "mining-bot"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "bollard",
- "dotenvy",
- "env_logger",
- "log",
- "serenity",
- "tokio",
 ]
 
 [[package]]
