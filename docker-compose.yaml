@@ -1,0 +1,25 @@
+services:
+  minecraft-discord-bot:
+    build: .
+    container_name: minecraft-discord-bot
+    depends_on:
+      - testing-container
+    environment:
+      - DISCORD_TOKEN=${DISCORD_TOKEN}
+      - CONTAINER_NAME=${CONTAINER_NAME}
+    env_file:
+      - .env
+  
+  testing-container:
+    container_name: testing-container
+    image: alpine
+    command: 
+      - /bin/sh
+      - -c
+      - |
+        i=0
+        while true; do
+          echo $$i
+          i=$((i+1))
+          sleep 1
+        done
