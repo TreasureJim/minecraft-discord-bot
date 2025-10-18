@@ -2,7 +2,6 @@
 mod docker;
 
 use bollard::{Docker, query_parameters::InspectContainerOptionsBuilder};
-use dotenvy::dotenv;
 use serenity::all::EditMessage;
 use serenity::async_trait;
 use serenity::model::channel::Message;
@@ -120,7 +119,6 @@ impl EventHandler for Handler {
 #[tokio::main]
 async fn main() {
     env_logger::init_from_env(env_logger::Env::default().filter_or("MINECRAFT_BOT", "warn"));
-    dotenv().expect("Could not find .env file");
     let token = env::var("DISCORD_TOKEN").expect("Expected DISCORD_TOKEN in environment");
 
     let intents = GatewayIntents::GUILD_MESSAGES
