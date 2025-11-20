@@ -1,0 +1,14 @@
+services:
+  testing-container:
+    container_name: testing-container
+    image: alpine
+    command: 
+      - /bin/sh
+      - -c
+      - |
+        i=0
+        while true; do
+          echo $$i
+          i=$((i+1))
+          sleep 1
+        done

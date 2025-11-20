@@ -4,6 +4,9 @@ services:
     container_name: minecraft-discord-bot
     depends_on:
       - testing-container
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    user: root
     environment:
       - DISCORD_TOKEN=${DISCORD_TOKEN}
       - CONTAINER_NAME=${CONTAINER_NAME}

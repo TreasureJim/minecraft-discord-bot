@@ -1,14 +1,15 @@
 #[allow(async_fn_in_trait)]
 mod docker;
 
-use bollard::{Docker, query_parameters::InspectContainerOptionsBuilder};
+
+
+use bollard::{query_parameters::InspectContainerOptionsBuilder, Docker};
 use serenity::all::EditMessage;
 use serenity::async_trait;
 use serenity::model::channel::Message;
 use serenity::model::gateway::Ready;
 use serenity::prelude::*;
-use std::env;
-use std::sync::Arc;
+use std::{env, sync::Arc};
 
 use crate::docker::{get_logs, restart_server};
 
@@ -21,6 +22,7 @@ impl TypeMapKey for GlobalData {
 }
 
 pub trait ContextExt {
+    #[allow(async_fn_in_trait)]
     async fn get_global_data(&self) -> Arc<GlobalData>;
 }
 
@@ -119,6 +121,11 @@ impl EventHandler for Handler {
 #[tokio::main]
 async fn main() {
     env_logger::init_from_env(env_logger::Env::default().filter_or("MINECRAFT_BOT", "warn"));
+    // Its ok if there is no env file to load
+    if cfg!(debug_assertions) {
+        let _ = dotenvy::dotenv();
+    }
+
     let token = env::var("DISCORD_TOKEN").expect("Expected DISCORD_TOKEN in environment");
 
     let intents = GatewayIntents::GUILD_MESSAGES
