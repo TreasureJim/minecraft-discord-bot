@@ -1,10 +1,12 @@
+mod commands;
 #[allow(async_fn_in_trait)]
 mod docker;
 
-
-
-use bollard::{query_parameters::InspectContainerOptionsBuilder, Docker};
-use serenity::all::EditMessage;
+use bollard::{Docker, query_parameters::InspectContainerOptionsBuilder};
+use serenity::all::{
+    Command, CreateInteractionResponse, CreateInteractionResponseMessage, EditMessage, GuildId,
+    Interaction,
+};
 use serenity::async_trait;
 use serenity::model::channel::Message;
 use serenity::model::gateway::Ready;
@@ -41,6 +43,23 @@ struct Handler;
 
 #[async_trait]
 impl EventHandler for Handler {
+    async fn interaction_create(&self, ctx: Context, interaction: Interaction) {
+        if let Interaction::Command(command) = interaction {
+            println!("Received interaction command: {}", command.data.name);
+            let ctx = commands::Context::new(ctx, command);
+
+            let result = match command.data.name.as_str() {
+                "ping" => commands::ping::run(&ctx),
+                "restart" => commands::restart::run(&ctx),
+            }
+            .await;
+
+            if let Err(why) = result {
+                println!("Cannot respond to slash command: {why}");
+            }
+        }
+    }
+
     async fn message(&self, ctx: Context, msg: Message) {
         // Ignore messages from bots to prevent infinite loops
         if msg.author.bot {
@@ -52,47 +71,13 @@ impl EventHandler for Handler {
         let is_mentioned = msg.mentions_user_id(bot_id);
         let content_lower = msg.content.to_lowercase();
 
-        if content_lower == "ping" {
-            if let Err(why) = msg.channel_id.say(&ctx.http, "Pong! 🏓").await {
-                println!("Error sending message: {:?}", why);
-            }
-            return;
-        }
-
-        if is_mentioned && content_lower.contains("help") {
-            const HELP_STR: &'static str = "help - displays this message.\nping - check if bot is responding.\nrestart - restarts the minecraft server (WARNING - this may lose progress if a backup has not been made).";
-            if let Err(why) = msg.channel_id.say(&ctx.http, HELP_STR).await {
-                println!("Error sending message: {:?}", why);
-            }
-            return;
-        }
-
-        if is_mentioned && content_lower.contains("restart") {
-            let mut restart_msg = match msg
-                .channel_id
-                .say(&ctx.http, ":arrows_clockwise: Restarting Server..")
-                .await
-            {
-                Ok(message) => message,
-                Err(why) => {
-                    println!("Error sending message: {:?}", why);
-                    return;
-                }
-            };
-
-            let msg = if let Err(e) = restart_server(&*ctx.get_global_data().await).await {
-                format!("Failed to restart:\n{e}")
-            } else {
-                ":white_check_mark: Server restarted!".to_string()
-            };
-
-            let builder = EditMessage::new().content(msg);
-            if let Err(why) = restart_msg.edit(&ctx, builder).await {
-                println!("Error sending message: {:?}", why);
-            };
-
-            return;
-        }
+        // if is_mentioned && content_lower.contains("help") {
+        //     const HELP_STR: &'static str = "help - displays this message.\nping - check if bot is responding.\nrestart - restarts the minecraft server (WARNING - this may lose progress if a backup has not been made).";
+        //     if let Err(why) = msg.channel_id.say(&ctx.http, HELP_STR).await {
+        //         println!("Error sending message: {:?}", why);
+        //     }
+        //     return;
+        // }
 
         if is_mentioned && content_lower.contains("log") {
             let (logs, log_errors) = get_logs(&*ctx.get_global_data().await).await;
@@ -113,8 +98,31 @@ impl EventHandler for Handler {
         }
     }
 
-    async fn ready(&self, _ctx: Context, ready: Ready) {
+    async fn ready(&self, ctx: Context, ready: Ready) {
         println!("{} is connected!", ready.user.name);
+
+        // Guild (Server) specific commands
+        // Maybe can use as admin commands on personal testing server
+        // let guild_id = GuildId::new(
+        //     env::var("GUILD_ID")
+        //         .expect("Expected GUILD_ID in environment")
+        //         .parse()
+        //         .expect("GUILD_ID must be an integer"),
+        // );
+        //
+        // let commands = guild_id
+        //     .set_commands(
+        //         &ctx.http,
+        //         vec![
+        //         ],
+        //     )
+        //     .await;
+        // println!("I now have the following guild slash commands: {commands:#?}");
+
+        // Works on all servers
+        let guild_command =
+            Command::create_global_command(&ctx.http, commands::ping::register()).await;
+        println!("I created the following global slash command: {guild_command:#?}");
     }
 }
 
