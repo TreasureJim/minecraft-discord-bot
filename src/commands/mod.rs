@@ -39,6 +39,8 @@ impl Context {
                 &self.context.http,
                 EditInteractionResponse::new().content(str),
             )
-            .await
+            .await?;
+
+        Ok(())
     }
 }
