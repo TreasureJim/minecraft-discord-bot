@@ -2,6 +2,7 @@ mod commands;
 #[allow(async_fn_in_trait)]
 mod docker;
 mod server_state;
+mod active_features;
 
 use bollard::query_parameters::InspectContainerOptionsBuilder;
 use serenity::all::{Command, GuildId, Interaction};
