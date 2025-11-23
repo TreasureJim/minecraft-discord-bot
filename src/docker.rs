@@ -3,12 +3,15 @@ use serenity::futures::StreamExt;
 
 use crate::ServerState;
 
-pub async fn restart_server(global_data: &ServerState) -> Result<(), String> {
-    println!("Restarting container: {}", global_data.container_name);
-    let _ = &global_data
+pub async fn restart_server(server_state: &ServerState) -> Result<(), String> {
+    println!(
+        "Restarting container: {}",
+        server_state.bot_config.container_name
+    );
+    let _ = &server_state
         .docker
         .restart_container(
-            &global_data.container_name,
+            &server_state.bot_config.container_name,
             Some(RestartContainerOptionsBuilder::new().t(30).build()),
         )
         .await
@@ -19,7 +22,7 @@ pub async fn restart_server(global_data: &ServerState) -> Result<(), String> {
 
 pub async fn get_logs(global_data: &ServerState) -> (Vec<String>, Vec<bollard::errors::Error>) {
     let logs = global_data.docker.logs(
-        &global_data.container_name,
+        &global_data.bot_config.container_name,
         Some(
             LogsOptionsBuilder::new()
                 .tail("20")
