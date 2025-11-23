@@ -59,7 +59,7 @@ impl EventHandler for Handler {
 
 #[tokio::main]
 async fn main() {
-    env_logger::init_from_env(env_logger::Env::default().filter_or("MINECRAFT_BOT", "info"));
+    env_logger::init_from_env(env_logger::Env::default().filter_or("MINECRAFT_BOT", "warn"));
     // Its ok if there is no env file to load
     if cfg!(debug_assertions) {
         let _ = dotenvy::dotenv();
