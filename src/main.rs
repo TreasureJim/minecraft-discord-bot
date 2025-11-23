@@ -18,7 +18,8 @@ struct Handler;
 impl EventHandler for Handler {
     async fn interaction_create(&self, ctx: Context, interaction: Interaction) {
         if let Interaction::Command(command) = interaction {
-            println!("Received interaction command: {}", command.data.name);
+            log::info!("Received interaction command: {}", command.data.name);
+            log::trace!("Received interaction command: {:#?}", command);
             let ctx = commands::Context::new(ctx, command);
 
             let result = match ctx.command.data.name.as_str() {
@@ -29,13 +30,13 @@ impl EventHandler for Handler {
             };
 
             if let Err(why) = result {
-                println!("Cannot respond to slash command: {why}");
+                log::error!("Cannot respond to slash command: {why}");
             }
         }
     }
 
     async fn ready(&self, ctx: Context, ready: Ready) {
-        println!("{} is connected!", ready.user.name);
+        log::info!("{} is connected!", ready.user.name);
 
         let public_commands = vec![
             commands::ping::register(),
@@ -47,12 +48,12 @@ impl EventHandler for Handler {
         if let Some(guild_id) = ctx.get_server_state().await.bot_config.guild_id {
             let guild_id = GuildId::new(guild_id);
             let commands = guild_id.set_commands(&ctx.http, public_commands.clone()).await;
-            println!("I now have the following guild slash commands: {commands:#?}");
+            log::debug!("I now have the following guild slash commands: {commands:#?}");
         }
 
         // Works on all servers
         let guild_command = Command::set_global_commands(&ctx.http, public_commands).await;
-        println!("I created the following global slash command: {guild_command:#?}");
+        log::debug!("I created the following global slash command: {guild_command:#?}");
     }
 }
 
@@ -99,6 +100,6 @@ async fn main() {
     }
 
     if let Err(why) = client.start().await {
-        println!("Client error: {:?}", why);
+        log::error!("Client error: {:?}", why);
     }
 }

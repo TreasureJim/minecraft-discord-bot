@@ -4,7 +4,7 @@ use serenity::futures::StreamExt;
 use crate::ServerState;
 
 pub async fn restart_server(server_state: &ServerState) -> Result<(), String> {
-    println!(
+    log::info!(
         "Restarting container: {}",
         server_state.bot_config.container_name
     );

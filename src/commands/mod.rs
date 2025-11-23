@@ -9,7 +9,6 @@ use crate::server_state::{ContextExt, ServerState};
 
 pub mod log;
 pub mod ping;
-pub mod players;
 pub mod restart;
 
 pub type CommandResult = serenity::Result<()>;
