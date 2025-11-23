@@ -1,9 +1,9 @@
 use bollard::query_parameters::{LogsOptionsBuilder, RestartContainerOptionsBuilder};
 use serenity::futures::StreamExt;
 
-use crate::GlobalData;
+use crate::ServerState;
 
-pub async fn restart_server(global_data: &GlobalData) -> Result<(), String> {
+pub async fn restart_server(global_data: &ServerState) -> Result<(), String> {
     println!("Restarting container: {}", global_data.container_name);
     let _ = &global_data
         .docker
@@ -17,7 +17,7 @@ pub async fn restart_server(global_data: &GlobalData) -> Result<(), String> {
     Ok(())
 }
 
-pub async fn get_logs(global_data: &GlobalData) -> (Vec<String>, Vec<bollard::errors::Error>) {
+pub async fn get_logs(global_data: &ServerState) -> (Vec<String>, Vec<bollard::errors::Error>) {
     let logs = global_data.docker.logs(
         &global_data.container_name,
         Some(

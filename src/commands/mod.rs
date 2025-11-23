@@ -1,7 +1,11 @@
+use std::sync::Arc;
+
 use serenity::all::{
     CommandInteraction, CreateInteractionResponse, CreateInteractionResponseMessage,
-    EditInteractionResponse, Interaction,
+    EditInteractionResponse
 };
+
+use crate::server_state::{ContextExt, ServerState};
 
 pub mod log;
 pub mod ping;
@@ -43,4 +47,9 @@ impl Context {
 
         Ok(())
     }
+
+    pub async fn get_server_state(&self) -> Arc<ServerState> {
+        self.context.get_server_state().await
+    }
 }
+

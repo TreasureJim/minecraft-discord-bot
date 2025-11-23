@@ -7,7 +7,7 @@ use super::{CommandResult, Context};
 pub async fn run(ctx: &Context) -> CommandResult {
     ctx.say(":arrows_clockwise: Restarting Server..").await?;
 
-    let msg = if let Err(e) = restart_server(&*ctx.get_global_data().await).await {
+    let msg = if let Err(e) = restart_server(ctx.get_server_state().await.as_ref()).await {
         format!("Failed to restart:\n{e}")
     } else {
         ":white_check_mark: Server restarted!".to_string()
