@@ -24,6 +24,7 @@ impl EventHandler for Handler {
             let result = match ctx.command.data.name.as_str() {
                 "ping" => commands::ping::run(&ctx).await,
                 "restart" => commands::restart::run(&ctx).await,
+                "log" => commands::log::run(&ctx).await,
                 _ => Ok(()),
             };
 
@@ -40,7 +41,6 @@ impl EventHandler for Handler {
             commands::ping::register(),
             commands::restart::register(),
             commands::log::register(),
-            // commands::players::register(),
         ];
 
         // Guild (Server) specific commands
