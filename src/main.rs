@@ -4,13 +4,13 @@ mod docker;
 mod server_state;
 
 use bollard::query_parameters::InspectContainerOptionsBuilder;
-use serenity::all::{Command, Interaction};
+use serenity::all::{Command, GuildId, Interaction};
 use serenity::async_trait;
 use serenity::model::gateway::Ready;
 use serenity::prelude::*;
 use std::{env, sync::Arc};
 
-use crate::server_state::{BotConfig, ServerState};
+use crate::server_state::{BotConfig, ContextExt, ServerState};
 
 struct Handler;
 
@@ -36,27 +36,22 @@ impl EventHandler for Handler {
     async fn ready(&self, ctx: Context, ready: Ready) {
         println!("{} is connected!", ready.user.name);
 
+        let public_commands = vec![
+            commands::ping::register(),
+            commands::restart::register(),
+            commands::log::register(),
+            // commands::players::register(),
+        ];
+
         // Guild (Server) specific commands
-        // Maybe can use as admin commands on personal testing server
-        // let guild_id = GuildId::new(
-        //     env::var("GUILD_ID")
-        //         .expect("Expected GUILD_ID in environment")
-        //         .parse()
-        //         .expect("GUILD_ID must be an integer"),
-        // );
-        //
-        // let commands = guild_id
-        //     .set_commands(
-        //         &ctx.http,
-        //         vec![
-        //         ],
-        //     )
-        //     .await;
-        // println!("I now have the following guild slash commands: {commands:#?}");
+        if let Some(guild_id) = ctx.get_server_state().await.bot_config.guild_id {
+            let guild_id = GuildId::new(guild_id);
+            let commands = guild_id.set_commands(&ctx.http, public_commands.clone()).await;
+            println!("I now have the following guild slash commands: {commands:#?}");
+        }
 
         // Works on all servers
-        let guild_command =
-            Command::create_global_command(&ctx.http, commands::ping::register()).await;
+        let guild_command = Command::set_global_commands(&ctx.http, public_commands).await;
         println!("I created the following global slash command: {guild_command:#?}");
     }
 }

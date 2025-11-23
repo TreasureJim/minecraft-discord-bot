@@ -37,14 +37,14 @@ impl ContextExt for Context {
 
 pub struct BotConfig {
     pub container_name: String,
-    pub guild_id: String,
+    pub guild_id: Option<u64>,
 }
 
 impl BotConfig {
     pub fn initialise() -> Self {
         Self {
             container_name: env_expect!("CONTAINER_NAME"),
-            guild_id: env_expect!("GUILD_ID"),
+            guild_id: std::env::var("GUILD_ID").ok().map(|id| id.parse().expect("GUILD_ID was not a positive number")),
         }
     }
 }
