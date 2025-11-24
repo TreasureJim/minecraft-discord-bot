@@ -1,4 +1,6 @@
-use bollard::query_parameters::{LogsOptionsBuilder, RestartContainerOptionsBuilder};
+use bollard::query_parameters::{
+    AttachContainerOptionsBuilder, LogsOptionsBuilder, RestartContainerOptionsBuilder,
+};
 use serenity::futures::StreamExt;
 
 use crate::ServerState;
@@ -49,4 +51,47 @@ pub async fn get_logs(global_data: &ServerState) -> (Vec<String>, Vec<bollard::e
     }
 
     (ok_logs, errors)
+}
+
+pub async fn attach_and_listen(
+    server_state: &ServerState,
+    func: impl Fn(&str),
+) -> Result<(), bollard::errors::Error> {
+    let mut attachment = server_state
+        .docker
+        .attach_container(
+            &server_state.bot_config.container_name,
+            Some(
+                AttachContainerOptionsBuilder::new()
+                    .stdout(true)
+                    .stderr(true)
+                    .stream(true)
+                    .build(),
+            ),
+        )
+        .await
+        .expect("Could not attach to the container");
+
+    while let Some(line) = attachment.output.next().await {
+        let line = line?;
+        match line {
+            bollard::container::LogOutput::StdErr { message }
+            | bollard::container::LogOutput::StdOut { message } => {
+                let message = match str::from_utf8(&message) {
+                    Ok(msg) => msg,
+                    Err(e) => {
+                        log::warn!("Could not parse msg as utf8: {e:?}");
+                        continue;
+                    }
+                };
+
+                func(message);
+            }
+            // bollard::container::LogOutput::StdIn { message } => todo!(),
+            // bollard::container::LogOutput::Console { message } => todo!(),
+            _ => {}
+        }
+    }
+
+    Ok(())
 }
