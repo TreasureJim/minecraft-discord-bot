@@ -17,18 +17,20 @@ use crate::server_state::ServerState;
 //     attach.
 // }
 
-pub async fn snitch_player_joined(http: Arc<Http>, message: &str) {
+pub async fn snitch_player_joined(http: &Arc<Http>, message: &str) {
     let Some(player) = player_joined_catch(message) else {
         return;
-    }
-    todo!("Check if player is in ignore list");
+    };
 
-    todo!("Get all servers in sqlx database and channel ids");
-    for channel_id_num in channel_ids {
-        let channel_id = ChannelId::new(channel_id_num).send_message(&http, CreateMessage::new().content(
-            format!("{player} just joined the server!")
-        )).await;
-    }
+    println!("{player} just joined the server.");
+
+    // todo!("Check if player is in ignore list");
+    // todo!("Get all servers in sqlx database and channel ids");
+    // for channel_id_num in channel_ids {
+    //     let channel_id = ChannelId::new(channel_id_num).send_message(&http, CreateMessage::new().content(
+    //         format!("{player} just joined the server!")
+    //     )).await;
+    // }
 }
 
 pub fn player_joined_catch(s: &str) -> Option<&str> {

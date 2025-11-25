@@ -1,8 +1,8 @@
+mod active_features;
 mod commands;
 #[allow(async_fn_in_trait)]
 mod docker;
 mod server_state;
-mod active_features;
 
 use bollard::query_parameters::InspectContainerOptionsBuilder;
 use serenity::all::{Command, GuildId, Interaction};
@@ -48,7 +48,9 @@ impl EventHandler for Handler {
         // Guild (Server) specific commands
         if let Some(guild_id) = ctx.get_server_state().await.bot_config.guild_id {
             let guild_id = GuildId::new(guild_id);
-            let commands = guild_id.set_commands(&ctx.http, public_commands.clone()).await;
+            let commands = guild_id
+                .set_commands(&ctx.http, public_commands.clone())
+                .await;
             log::debug!("I now have the following guild slash commands: {commands:#?}");
         }
 
@@ -77,27 +79,42 @@ async fn main() {
         .await
         .expect("Error creating client");
 
-    let global_data = ServerState {
+    let server_state = ServerState {
         docker: bollard::Docker::connect_with_local_defaults()
             .expect("Could not connect to docker"),
         bot_config: BotConfig::initialise(),
     };
+    let server_state = Arc::new(server_state);
 
-    let _ = global_data
+    let _ = server_state
         .docker
         .inspect_container(
-            &global_data.bot_config.container_name,
+            &server_state.bot_config.container_name,
             Some(InspectContainerOptionsBuilder::new().build()),
         )
         .await
         .expect(&format!(
             "Could not find container: {}",
-            global_data.bot_config.container_name
+            server_state.bot_config.container_name
         ));
 
     {
         let mut data = client.data.write().await;
-        data.insert::<ServerState>(Arc::new(global_data));
+        data.insert::<ServerState>(server_state.clone());
+    }
+
+    {
+        let http_clone = client.http.clone();
+        let server_state_clone = server_state.clone();
+        tokio::task::spawn(async move {
+            let func = |s: String| {
+                let http = http_clone.clone();
+                async move {
+                    active_features::players::snitch_player_joined(&http, &s).await;
+                }
+            };
+            docker::attach_and_listen(&server_state_clone, func).await
+        });
     }
 
     if let Err(why) = client.start().await {
