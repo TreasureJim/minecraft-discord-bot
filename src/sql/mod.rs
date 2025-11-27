@@ -2,11 +2,16 @@ use sqlx::{Database, Decode, Encode, Type};
 
 pub mod player_join;
 
+#[derive(Debug)]
 pub struct SqlU64(u64);
 
 impl SqlU64 {
     pub fn new(num: u64) -> Self {
         Self(num)
+    }
+
+    pub fn get(&self) -> u64 {
+        self.0
     }
 
     pub fn from_db(num: i64) -> Self {
@@ -15,6 +20,12 @@ impl SqlU64 {
     
     pub fn to_db(&self) -> i64 {
         self.0 as i64
+    }
+}
+
+impl From<i64> for SqlU64 {
+    fn from(value: i64) -> Self {
+        Self(value as u64)
     }
 }
 

@@ -2,6 +2,9 @@ use std::sync::Arc;
 
 use bollard::Docker;
 use serenity::{all::Context, prelude::TypeMapKey};
+use tokio::sync::RwLock;
+
+use crate::active_features::players::PlayerPresenceLog;
 
 macro_rules! env_expect {
     ($env_name:literal) => {
@@ -10,10 +13,15 @@ macro_rules! env_expect {
     };
 }
 
+pub struct ServerStateMutables {
+    pub player_presence_log: PlayerPresenceLog,
+}
+
 pub struct ServerState {
     pub bot_config: BotConfig,
     pub docker: Docker,
     pub db: sqlx::Pool<sqlx::Postgres>,
+    pub mutables: RwLock<ServerStateMutables>,
 }
 
 impl TypeMapKey for ServerState {
@@ -46,7 +54,9 @@ impl BotConfig {
     pub fn initialise() -> Self {
         Self {
             container_name: env_expect!("CONTAINER_NAME"),
-            guild_id: std::env::var("GUILD_ID").ok().map(|id| id.parse().expect("GUILD_ID was not a positive number")),
+            guild_id: std::env::var("GUILD_ID")
+                .ok()
+                .map(|id| id.parse().expect("GUILD_ID was not a positive number")),
             db_addr: env_expect!("DATABASE_URL"),
         }
     }

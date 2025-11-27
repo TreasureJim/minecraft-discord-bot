@@ -5,7 +5,9 @@ use super::SqlU64;
 
 #[derive(sqlx::FromRow)]
 pub struct PlayerJoinServerChannel {
+    #[sqlx(try_from = "i64")]
     pub guild_id: SqlU64,
+    #[sqlx(try_from = "i64")]
     pub channel_id: SqlU64,
 }
 
@@ -15,6 +17,15 @@ impl PlayerJoinServerChannel {
             guild_id: guild_id.get().into(),
             channel_id: channel_id.get().into(),
         }
+    }
+
+    pub async fn get_all_channels(pool: &PgPool) -> sqlx::Result<Vec<PlayerJoinServerChannel>> {
+        sqlx::query_as!(
+            PlayerJoinServerChannel,
+            "SELECT * FROM player_joined_server_channel"
+        )
+        .fetch_all(pool)
+        .await
     }
 
     pub fn insert_channel(
@@ -56,7 +67,12 @@ impl PlayerJoinIgnore {
         &self,
     ) -> sqlx::query::Query<'_, sqlx::Postgres, sqlx::postgres::PgArguments> {
         sqlx::query!(
-            "INSERT INTO player_join_ignore (discord_id, player_name) VALUES ($1, $2)",
+            "INSERT INTO player_join_ignore (discord_id, player_name) 
+                VALUES ($1, $2)
+                ON CONFLICT (discord_id)
+                DO UPDATE SET
+                    player_name = $2
+                ",
             self.discord_id.to_db(),
             self.player_name,
         )
@@ -66,9 +82,8 @@ impl PlayerJoinIgnore {
         &self,
     ) -> sqlx::query::Query<'_, sqlx::Postgres, sqlx::postgres::PgArguments> {
         sqlx::query!(
-            "DELETE FROM player_join_ignore WHERE discord_id = $1 AND player_name = $2",
+            "DELETE FROM player_join_ignore WHERE discord_id = $1",
             self.discord_id.to_db(),
-            self.player_name,
         )
     }
 

@@ -12,7 +12,8 @@ use serenity::model::gateway::Ready;
 use serenity::prelude::*;
 use std::{env, sync::Arc};
 
-use crate::server_state::{BotConfig, ContextExt, ServerState};
+use crate::active_features::players::PlayerPresenceLog;
+use crate::server_state::{BotConfig, ContextExt, ServerState, ServerStateMutables};
 
 struct Handler;
 
@@ -24,7 +25,6 @@ impl EventHandler for Handler {
             log::trace!("Received interaction command: {:#?}", command);
             let ctx = commands::Context::new(ctx, command);
 
-            dbg!(ctx.command.data.name.as_str());
             let result = match ctx.command.data.name.as_str() {
                 "ping" => commands::ping::run(&ctx).await,
                 "restart" => commands::restart::run(&ctx).await,
@@ -91,6 +91,9 @@ async fn main() {
 
     let server_state = {
         let bot_config = BotConfig::initialise();
+        let mutables = ServerStateMutables {
+            player_presence_log: PlayerPresenceLog::new()
+        };
         let server_state = ServerState {
             docker: bollard::Docker::connect_with_local_defaults()
                 .expect("Could not connect to docker"),
@@ -98,6 +101,7 @@ async fn main() {
                 .await
                 .expect("Could not connect to database"),
             bot_config,
+            mutables: RwLock::new(mutables),
         };
         Arc::new(server_state)
     };
@@ -127,8 +131,10 @@ async fn main() {
         tokio::task::spawn(async move {
             let func = |s: String| {
                 let http = http_clone.clone();
+                let server_state = server_state.clone();
                 async move {
-                    active_features::players::snitch_player_joined(&http, &s).await;
+                    // todo: add some sort of graceful shutdown or logging
+                    let _ = active_features::players::snitch_player_joined(&server_state, &http, &s).await.map_err(|e| log::error!("Error in snitch_player_joined"));
                 }
             };
             docker::attach_and_listen(&server_state_clone, func).await
