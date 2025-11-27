@@ -65,7 +65,7 @@ pub async fn snitch_player_joined(
     http: &Arc<Http>,
     message: &str,
 ) -> CommandResult {
-    const PLAYER_ANNOUNCE_COOLDOWN: Duration = Duration::from_mins(10);
+    const PLAYER_ANNOUNCE_COOLDOWN: Duration = Duration::new(10 * 60, 0);
 
     let Some(player_name) = player_joined_catch(message) else {
         return Ok(());
