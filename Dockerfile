@@ -22,17 +22,19 @@ RUN adduser \
     "minecraft-discord-bot"
 
 # Create a dummy project and build dependencies first
-WORKDIR /app
-RUN cargo init --name minecraft-discord-bot
+WORKDIR /app 
+RUN cargo init --name minecraft-discord-bot 
 COPY ./Cargo.lock .
 COPY ./Cargo.toml .
 # RUN cargo build --target x86_64-unknown-linux-musl --release
-RUN cargo build --release
+RUN cargo build --release 
 
 # Now copy the actual source code and rebuild if needed
-COPY ./src ./src
+RUN rm -f ./target/release/deps/minecraft_discord_bot*
+COPY ./src ./src 
+COPY ./.sqlx ./.sqlx
 # RUN cargo build --target x86_64-unknown-linux-musl --release
-RUN cargo build --release
+RUN cargo build --release 
 
 ########################################################################################################################
 # image
