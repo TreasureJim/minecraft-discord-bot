@@ -4,14 +4,31 @@ use serenity::all::{
     CommandInteraction, CreateInteractionResponse, CreateInteractionResponseMessage,
     EditInteractionResponse
 };
+use thiserror::Error;
 
 use crate::server_state::{ContextExt, ServerState};
 
 pub mod log;
 pub mod ping;
 pub mod restart;
+pub mod snitch;
 
-pub type CommandResult = serenity::Result<()>;
+
+#[derive(Error, Debug)]
+pub enum CommandError {
+    #[error("Serenity error")]
+    Serenity(#[from] serenity::Error),
+    #[error("Database error")]
+    Db(#[from] sqlx::Error),
+
+    #[error("Guild command triggered not from guild")]
+    BadGuildCall,
+    #[error("Option was given incorrectly")]
+    BadOptionPassed,
+    #[error("Invalid option index accessed")]
+    BadOptionIndex(u8),
+}
+pub type CommandResult = Result<(), CommandError>;
 
 pub struct Context {
     pub context: serenity::all::Context,

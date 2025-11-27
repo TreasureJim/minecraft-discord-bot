@@ -1,8 +1,11 @@
 -- Add migration script here
-CREATE DOMAIN u64 AS BIGINT;
-
 create table if not EXISTS player_joined_server_channel (
-  guild_id u64,
-  channel_id u64,
+  guild_id BIGINT NOT NULL,
+  channel_id BIGINT NOT NULL,
   PRIMARY KEY (guild_id, channel_id)
+);
+
+create table if not EXISTS player_join_ignore (
+  discord_id BIGINT NOT NULL PRIMARY KEY,
+  player_name VARCHAR(25) NOT NULL
 );

@@ -3,6 +3,7 @@ mod commands;
 #[allow(async_fn_in_trait)]
 mod docker;
 mod server_state;
+mod sql;
 
 use bollard::query_parameters::InspectContainerOptionsBuilder;
 use serenity::all::{Command, GuildId, Interaction};
@@ -23,10 +24,15 @@ impl EventHandler for Handler {
             log::trace!("Received interaction command: {:#?}", command);
             let ctx = commands::Context::new(ctx, command);
 
+            dbg!(ctx.command.data.name.as_str());
             let result = match ctx.command.data.name.as_str() {
                 "ping" => commands::ping::run(&ctx).await,
                 "restart" => commands::restart::run(&ctx).await,
                 "log" => commands::log::run(&ctx).await,
+                "snitch_channel_add" => commands::snitch::channel::add::run(&ctx).await,
+                "snitch_channel_remove" => commands::snitch::channel::remove::run(&ctx).await,
+                "snitch_add" => commands::snitch::user::add::run(&ctx).await,
+                "snitch_remove" => commands::snitch::user::remove::run(&ctx).await,
                 _ => Ok(()),
             };
 
@@ -43,6 +49,10 @@ impl EventHandler for Handler {
             commands::ping::register(),
             commands::restart::register(),
             commands::log::register(),
+            commands::snitch::channel::add::register(),
+            commands::snitch::channel::remove::register(),
+            commands::snitch::user::add::register(),
+            commands::snitch::user::remove::register(),
         ];
 
         // Guild (Server) specific commands
@@ -62,7 +72,7 @@ impl EventHandler for Handler {
 
 #[tokio::main]
 async fn main() {
-    env_logger::init_from_env(env_logger::Env::default().filter_or("MINECRAFT_BOT", "warn"));
+    env_logger::init_from_env(env_logger::Env::default().filter_or("LOG_LEVEL", "warn"));
     // Its ok if there is no env file to load
     if cfg!(debug_assertions) {
         let _ = dotenvy::dotenv();
@@ -79,12 +89,18 @@ async fn main() {
         .await
         .expect("Error creating client");
 
-    let server_state = ServerState {
-        docker: bollard::Docker::connect_with_local_defaults()
-            .expect("Could not connect to docker"),
-        bot_config: BotConfig::initialise(),
+    let server_state = {
+        let bot_config = BotConfig::initialise();
+        let server_state = ServerState {
+            docker: bollard::Docker::connect_with_local_defaults()
+                .expect("Could not connect to docker"),
+            db: sqlx::PgPool::connect(&bot_config.db_addr)
+                .await
+                .expect("Could not connect to database"),
+            bot_config,
+        };
+        Arc::new(server_state)
     };
-    let server_state = Arc::new(server_state);
 
     let _ = server_state
         .docker
@@ -93,10 +109,12 @@ async fn main() {
             Some(InspectContainerOptionsBuilder::new().build()),
         )
         .await
-        .expect(&format!(
-            "Could not find container: {}",
-            server_state.bot_config.container_name
-        ));
+        .unwrap_or_else(|_| {
+            panic!(
+                "Could not find container: {}",
+                server_state.bot_config.container_name
+            )
+        });
 
     {
         let mut data = client.data.write().await;

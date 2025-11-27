@@ -13,6 +13,7 @@ macro_rules! env_expect {
 pub struct ServerState {
     pub bot_config: BotConfig,
     pub docker: Docker,
+    pub db: sqlx::Pool<sqlx::Postgres>,
 }
 
 impl TypeMapKey for ServerState {
@@ -37,6 +38,7 @@ impl ContextExt for Context {
 
 pub struct BotConfig {
     pub container_name: String,
+    pub db_addr: String,
     pub guild_id: Option<u64>,
 }
 
@@ -45,6 +47,7 @@ impl BotConfig {
         Self {
             container_name: env_expect!("CONTAINER_NAME"),
             guild_id: std::env::var("GUILD_ID").ok().map(|id| id.parse().expect("GUILD_ID was not a positive number")),
+            db_addr: env_expect!("DATABASE_URL"),
         }
     }
 }
