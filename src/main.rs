@@ -134,7 +134,7 @@ async fn main() {
                 let server_state = server_state.clone();
                 async move {
                     // todo: add some sort of graceful shutdown or logging
-                    let _ = active_features::players::snitch_player_joined(&server_state, &http, &s).await.map_err(|e| log::error!("Error in snitch_player_joined"));
+                    let _ = active_features::players::snitch_player_joined(&server_state, &http, &s).await.map_err(|e| log::error!("Error in snitch_player_joined: {e}"));
                 }
             };
             docker::attach_and_listen(&server_state_clone, func).await
