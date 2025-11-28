@@ -33,6 +33,7 @@ RUN cargo build --release
 RUN rm -f ./target/release/deps/minecraft_discord_bot*
 COPY ./src ./src 
 COPY ./.sqlx ./.sqlx
+COPY ./migrations ./migrations
 # RUN cargo build --target x86_64-unknown-linux-musl --release
 RUN cargo build --release 
 
@@ -45,6 +46,7 @@ FROM debian:stable
 COPY --from=build /etc/passwd /etc/passwd
 COPY --from=build /etc/group /etc/group
 
+COPY ./.sqlx ./.sqlx
 COPY --from=build --chown=minecraft-discord-bot:minecraft-discord-bot /app/target/release/minecraft-discord-bot /app/minecraft-discord-bot
 
 USER minecraft-discord-bot:minecraft-discord-bot

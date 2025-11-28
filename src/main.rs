@@ -61,22 +61,23 @@ impl EventHandler for Handler {
             let commands = guild_id
                 .set_commands(&ctx.http, public_commands.clone())
                 .await;
-            log::debug!("I now have the following guild slash commands: {commands:#?}");
+            log::trace!("I now have the following guild slash commands: {commands:#?}");
         }
 
         // Works on all servers
         let guild_command = Command::set_global_commands(&ctx.http, public_commands).await;
-        log::debug!("I created the following global slash command: {guild_command:#?}");
+        log::trace!("I created the following global slash command: {guild_command:#?}");
     }
 }
 
 #[tokio::main]
 async fn main() {
-    env_logger::init_from_env(env_logger::Env::default().filter_or("LOG_LEVEL", "warn"));
     // Its ok if there is no env file to load
     if cfg!(debug_assertions) {
         let _ = dotenvy::dotenv();
     }
+
+    env_logger::init_from_env(env_logger::Env::default().filter_or("LOG_LEVEL", "warn"));
 
     let token = env::var("DISCORD_TOKEN").expect("Expected DISCORD_TOKEN in environment");
 
@@ -92,7 +93,7 @@ async fn main() {
     let server_state = {
         let bot_config = BotConfig::initialise();
         let mutables = ServerStateMutables {
-            player_presence_log: PlayerPresenceLog::new()
+            player_presence_log: PlayerPresenceLog::new(),
         };
         let server_state = ServerState {
             docker: bollard::Docker::connect_with_local_defaults()
@@ -106,7 +107,12 @@ async fn main() {
         Arc::new(server_state)
     };
 
-    let _ = server_state
+    sqlx::migrate!("./migrations")
+        .run(&server_state.db)
+        .await
+        .expect("Could not run database migrations");
+
+    let container_inspect_response = server_state
         .docker
         .inspect_container(
             &server_state.bot_config.container_name,
@@ -134,7 +140,10 @@ async fn main() {
                 let server_state = server_state.clone();
                 async move {
                     // todo: add some sort of graceful shutdown or logging
-                    let _ = active_features::players::snitch_player_joined(&server_state, &http, &s).await.map_err(|e| log::error!("Error in snitch_player_joined: {e}"));
+                    let _ =
+                        active_features::players::snitch_player_joined(&server_state, &http, &s)
+                            .await
+                            .map_err(|e| log::error!("Error in snitch_player_joined: {e}"));
                 }
             };
             docker::attach_and_listen(&server_state_clone, func).await

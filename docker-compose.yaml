@@ -1,28 +1,54 @@
 services:
+  mc:
+    image: itzg/minecraft-server
+    container_name: minecraft-server
+    tty: true
+    stdin_open: true
+    ports:
+      - "25565:25565"
+    environment:
+      EULA: "TRUE"
+      TYPE: "PAPER"
+      VERRSION: 1.21.10
+      PAPER_BUILD: 113
+    volumes:
+      - ./data:/data
+    restart: unless-stopped
+    labels:
+      - "autoheal=true"
+
   minecraft-discord-bot:
-    build: .
+    image: treasurejim/minecraft-discord-bot:latest
     container_name: minecraft-discord-bot
+    restart: unless-stopped
     depends_on:
-      - testing-container
+      - mc
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
     user: root
     environment:
-      - DISCORD_TOKEN=${DISCORD_TOKEN}
-      - CONTAINER_NAME=${CONTAINER_NAME}
+      CONTAINER_NAME: minecraft-server
+      DISCORD_TOKEN: ${DISCORD_TOKEN}
+      GUILD_ID: ${GUILD_ID}
+      DATABASE_URL: ${DATABASE_URL}
+      SQLX_OFFLINE: ${SQLX_OFFLINE}
+      LOG_LEVEL: "trace"
+
     env_file:
       - .env
-  
-  testing-container:
-    container_name: testing-container
-    image: alpine
-    command: 
-      - /bin/sh
-      - -c
-      - |
-        i=0
-        while true; do
-          echo $$i
-          i=$((i+1))
-          sleep 1
-        done
+
+  db:
+    container_name: minecraft_db
+    image: postgres
+    environment:
+      POSTGRES_PASSWORD: ${DATABASE_PASSWORD}
+    ports:
+      - 5432:5432
+    env_file:
+      - .envSION: 1.21.10
+      PAPER_BUILD: 113
+    volumes:
+      - ./data:/data
+    restart: unless-stopped
+    labels:
+      - "autoheal=true"

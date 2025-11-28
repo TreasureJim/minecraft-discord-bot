@@ -7,10 +7,7 @@ use crate::ServerState;
 
 pub async fn restart_server(server_state: &ServerState) -> Result<(), String> {
     let container_name = &server_state.bot_config.container_name;
-    log::info!(
-        "Restarting container: {}",
-        container_name
-    );
+    log::info!("Restarting container: {}", container_name);
     let _ = &server_state
         .docker
         .restart_container(
@@ -82,7 +79,10 @@ where
         let line = line?;
         match line {
             bollard::container::LogOutput::StdErr { message }
-            | bollard::container::LogOutput::StdOut { message } => {
+            | bollard::container::LogOutput::StdOut { message } 
+            // | bollard::container::LogOutput::StdIn { message } 
+            | bollard::container::LogOutput::Console { message } 
+            => {
                 let message = match str::from_utf8(&message) {
                     Ok(msg) => msg,
                     Err(e) => {
@@ -90,18 +90,19 @@ where
                         continue;
                     }
                 };
+                let message = strip_ansi_escapes::strip_str(message);
 
                 let messages: Vec<_> = message.lines().collect();
                 for message in messages {
-                    log::trace!("Received message from container {container_name}: {message}");
+                    log::debug!("Received message from container {container_name}: {message}");
                     func(message.to_string()).await;
                 }
             }
-            // bollard::container::LogOutput::StdIn { message } => todo!(),
-            // bollard::container::LogOutput::Console { message } => todo!(),
             _ => {}
         }
     }
+
+    log::debug!("No more messages from container {container_name} available. Stopping attachment");
 
     Ok(())
 }
