@@ -16,16 +16,16 @@ pub mod snitch;
 
 #[derive(Error, Debug)]
 pub enum CommandError {
-    #[error("Serenity error")]
+    #[error("Serenity error: {0}")]
     Serenity(#[from] serenity::Error),
-    #[error("Database error")]
+    #[error("Database error: {0}")]
     Db(#[from] sqlx::Error),
 
     #[error("Guild command triggered not from guild")]
     BadGuildCall,
     #[error("Option was given incorrectly")]
     BadOptionPassed,
-    #[error("Invalid option index accessed")]
+    #[error("Invalid option index accessed: {0}")]
     BadOptionIndex(u8),
 }
 pub type CommandResult = Result<(), CommandError>;
