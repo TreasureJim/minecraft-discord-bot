@@ -32,7 +32,9 @@ impl PlayerJoinServerChannel {
         &self,
     ) -> sqlx::query::Query<'_, sqlx::Postgres, sqlx::postgres::PgArguments> {
         sqlx::query!(
-            "INSERT INTO player_joined_server_channel (guild_id, channel_id) VALUES ($1, $2)",
+            "INSERT INTO player_joined_server_channel (guild_id, channel_id) 
+                VALUES ($1, $2)
+                ON CONFLICT (guild_id, channel_id) DO NOTHING",
             self.guild_id.to_db(),
             self.channel_id.to_db()
         )

@@ -13,7 +13,7 @@ pub mod channel {
         use super::*;
 
         pub async fn run(ctx: &Context) -> CommandResult {
-            sql::player_join::PlayerJoinServerChannel::new(
+            let sql_res = sql::player_join::PlayerJoinServerChannel::new(
                 ctx.command
                     .guild_id
                     .ok_or(crate::commands::CommandError::BadGuildCall)?,
@@ -23,7 +23,12 @@ pub mod channel {
             .execute(&ctx.get_server_state().await.db)
             .await?;
 
-            ctx.say("This channel will now announce when players join the minecraft server").await?;
+            if sql_res.rows_affected() == 1 {
+                ctx.say("This channel will now announce when players join the minecraft server").await?;
+            } else if sql_res.rows_affected() == 0 {
+                ctx.say("This channel already announces when players join the minecraft server").await?;
+            }
+
 
             Ok(())
         }
